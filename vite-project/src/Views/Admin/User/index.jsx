@@ -3,7 +3,7 @@ import {
     MagnifyingGlassIcon,
     UserPlusIcon,
     PencilSquareIcon,
-    TrashIcon,
+    ArchiveBoxXMarkIcon,
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import TextInput from "../../../Components/TextInput";
@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteUser, getUsers } from "../../../Redux/features/User/userSlice";
 import Loading from "../../../Components/Loading";
+import Button from "../../../Components/Button";
 
 const User = () => {
     const dispatch = useDispatch();
@@ -23,6 +24,7 @@ const User = () => {
     const [currentPageUrl, setCurrentPageUrl] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
 
+    const [selectedContacts, setSelectedContacts] = useState([]);
     const [openModal, setOpenModal] = useState(false);
 
     const handleOpenModal = () => setOpenModal(true);
@@ -41,13 +43,36 @@ const User = () => {
         setSearchTerm(e.target.value);
     };
 
-    const onDeleteClick = async (id) => {
+    const handleCheckboxChange = (e, id) => {
+        if (e.target.checked) {
+            setSelectedContacts([...selectedContacts, id]);
+        } else {
+            setSelectedContacts(
+                selectedContacts.filter((contactId) => contactId !== id)
+            );
+        }
+    };
+
+    const handleAllCheckboxChange = () => {
+        if (selectedContacts.length === contacts.length) {
+            setSelectedContacts([]);
+        } else {
+            setSelectedContacts(contacts.map((contact) => contact.id));
+        }
+    };
+
+    const handleMassDelete = async () => {
+        if (selectedContacts.length === 0) return;
+
         try {
-            await dispatch(deleteUser(id)).unwrap();
+            await Promise.all(
+                selectedContacts.map((id) => dispatch(deleteUser(id)).unwrap())
+            );
+            setSelectedContacts([]);
+            dispatch(getUsers({ page: currentPageUrl, search: searchTerm }));
             setOpenModal(false);
-            dispatch(getUsers({ page: currentPageUrl }));
         } catch (error) {
-            console.error("Error delete:", error);
+            console.error("Error deleting multiple contacts:", error);
         }
     };
 
@@ -60,15 +85,21 @@ const User = () => {
                             Contacts
                         </h1>
                         <div className="flex space-x-2">
-                            <Link
-                                className="px-4 py-2 h-12 mt-1 rounded-lg bg-gray-800 shadow text-white border border-white hover:bg-gray-600 inline-flex items-center sm:w-auto md:w-auto sm:px-6 sm:py-3"
-                                to="/admin/users/new"
+                            <Button
+                                color="red"
+                                onClick={handleOpenModal}
+                                disabled={selectedContacts.length === 0}
                             >
-                                <UserPlusIcon className="h-6 w-6 text-white mr-2" />
+                                <ArchiveBoxXMarkIcon className="h-6 w-6 text-red-700 mr-2 dark:text-red-500 transition-colors duration-200 group-hover:text-white" />
+                                Mass Delete
+                            </Button>
+
+                            <Button color="gray" to="/admin/users/new">
+                                <UserPlusIcon className="h-6 w-6 text-gray-700 mr-2 dark:gray-red-500 transition-colors duration-200 group-hover:text-white" />
                                 <span className="hidden sm:inline">
                                     Add Contact
                                 </span>
-                            </Link>
+                            </Button>
                             <div>
                                 <label
                                     htmlFor="table-search"
@@ -83,7 +114,7 @@ const User = () => {
                                     <TextInput
                                         type="search"
                                         id="table-search"
-                                        className="block w-full pl-10 pr-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-gray-500 focus:border-gray-500 dark:placeholder-gray-400 dark:text-dark dark:focus:ring-gray-700 dark:focus:border-gray-700"
+                                        className="block w-full rounded-full pl-10 pr-4 py-2 text-sm text-gray-900 border border-gray-300 bg-gray-50 focus:ring-gray-500 focus:border-gray-500 dark:placeholder-gray-400 dark:text-dark dark:focus:ring-gray-700 dark:focus:border-gray-700"
                                         value={searchTerm}
                                         onChange={handleSearch}
                                         autoComplete="search"
@@ -95,11 +126,40 @@ const User = () => {
                         </div>
                     </div>
                     <div className="container">
-                        <div className="flex align-middle justify-center">
-                            <table className="w-full text-sm text-gray-500 text-left rtl:text-right dark:text-gray-400 table-fixed">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-gray-500 text-left rtl:text-right dark:text-gray-400">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-800 dark:bg-gray-800 dark:text-gray-200 border-b-2 border-gray-500">
                                     <tr>
-                                        <th className="p-2">ID</th>
+                                        <th className="p-2 text-center w-16">
+                                            <div className="flex justify-center items-center h-full">
+                                                <input
+                                                    id="default-checkbox"
+                                                    type="checkbox"
+                                                    className={`${
+                                                        contacts &&
+                                                        contacts.length > 0
+                                                            ? "cursor-pointer"
+                                                            : "cursor-not-allowed"
+                                                    }  w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600`}
+                                                    checked={
+                                                        contacts &&
+                                                        contacts.length > 0 &&
+                                                        selectedContacts.length ===
+                                                            contacts.length
+                                                    }
+                                                    disabled={
+                                                        contacts &&
+                                                        contacts.length === 0
+                                                    }
+                                                    onChange={
+                                                        handleAllCheckboxChange
+                                                    }
+                                                />
+                                            </div>
+                                        </th>
+                                        <th className="p-2 w-16 text-center">
+                                            ID
+                                        </th>
                                         <th className="p-2">Name</th>
                                         <th className="p-2">Company</th>
                                         <th className="p-2">Phone</th>
@@ -113,7 +173,7 @@ const User = () => {
                                     <tbody>
                                         <tr>
                                             <td
-                                                colSpan="6"
+                                                colSpan="7"
                                                 className="text-center p-2 text-gray-900"
                                             >
                                                 <div className="flex items-center justify-center min-h-80">
@@ -134,22 +194,40 @@ const User = () => {
                                                     key={key}
                                                     className="text-nowrap bg-white text-lg text-gray-800 border-b dark:border-gray-700 hover:text-white dark:hover:bg-gray-700 hover:bg-gray-50 transition-colors duration-200"
                                                 >
-                                                    <td className="p-4">
+                                                    <td className="p-4 w-16">
+                                                        <div className="flex justify-center items-center h-full">
+                                                            <input
+                                                                id="default-checkbox"
+                                                                type="checkbox"
+                                                                checked={selectedContacts.includes(
+                                                                    u.id
+                                                                )}
+                                                                onChange={(e) =>
+                                                                    handleCheckboxChange(
+                                                                        e,
+                                                                        u.id
+                                                                    )
+                                                                }
+                                                                className="cursor-pointer w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-blue-700 dark:border-blue-600"
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 text-center w-16">
                                                         {key + 1}.
                                                     </td>
-                                                    <td className="w-1/5 truncate">
+                                                    <td className="p-4 w-1/5 truncate">
                                                         {u.name}
                                                     </td>
-                                                    <td className="w-1/5 truncate">
+                                                    <td className="p-4 w-1/5 truncate">
                                                         {u.company}
                                                     </td>
-                                                    <td className="w-1/5 truncate">
+                                                    <td className="p-4 w-1/5 truncate">
                                                         {u.phone}
                                                     </td>
-                                                    <td className="w-1/5 truncate">
+                                                    <td className="p-4 w-1/5 truncate">
                                                         {u.email}
                                                     </td>
-                                                    <td>
+                                                    <td className="p-4">
                                                         <div className="flex space-x-2 justify-center">
                                                             <Link
                                                                 type="button"
@@ -158,34 +236,6 @@ const User = () => {
                                                             >
                                                                 <PencilSquareIcon className="size-6 text-dark-500" />
                                                             </Link>
-                                                            <button
-                                                                onClick={
-                                                                    handleOpenModal
-                                                                }
-                                                                type="button"
-                                                                className="px-3 py-1 text-gray-900 hover:bg-red-500 rounded-md hover:rounded hover:shadow hover:text-white transition-colors duration-200"
-                                                            >
-                                                                <TrashIcon className="size-6 text-dark-500" />
-                                                            </button>
-                                                            {openModal && (
-                                                                <Modal
-                                                                    open={
-                                                                        openModal
-                                                                    }
-                                                                    onClose={
-                                                                        handleCloseModal
-                                                                    }
-                                                                    onConfirm={
-                                                                        onDeleteClick
-                                                                    }
-                                                                    showCloseButton={
-                                                                        true
-                                                                    }
-                                                                    title="Delete Contact"
-                                                                    message="Are you sure you want to Delete your account? This action cannot be undone."
-                                                                    id={u.id}
-                                                                />
-                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -193,7 +243,7 @@ const User = () => {
                                         ) : (
                                             <tr>
                                                 <td
-                                                    colSpan="6"
+                                                    colSpan="7"
                                                     className="text-center p-2 min-h-80"
                                                 >
                                                     <h1>Empty Value</h1>
@@ -205,15 +255,28 @@ const User = () => {
                             </table>
                         </div>
                     </div>
+
                     <div className="flex justify-center items-center my-2">
-                        {status === "succeeded" && meta?.links && (
-                            <Pagination
-                                links={meta.links}
-                                fetchNextPrevTasks={fetchUsers}
-                            />
-                        )}
+                        {status === "succeeded" &&
+                            (contacts && contacts.length) > 0 &&
+                            meta?.links && (
+                                <Pagination
+                                    links={meta.links}
+                                    fetchNextPrevTasks={fetchUsers}
+                                />
+                            )}
                     </div>
                 </div>
+                {openModal && (
+                    <Modal
+                        open={openModal}
+                        onClose={handleCloseModal}
+                        onConfirm={handleMassDelete}
+                        showCloseButton={true}
+                        title="Delete Contact"
+                        message="Are you sure you want to delete your account? This action cannot be undone."
+                    />
+                )}
             </div>
         </div>
     );

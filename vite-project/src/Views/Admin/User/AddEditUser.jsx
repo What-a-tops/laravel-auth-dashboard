@@ -16,6 +16,7 @@ import {
 import { unwrapResult } from "@reduxjs/toolkit";
 import Loading from "../../../Components/Loading";
 import ImageUploadPreview from "./ImagePreview";
+import Button from "../../../Components/Button";
 
 const AddEditUser = () => {
     const { id } = useParams();
@@ -354,7 +355,10 @@ const AddEditUser = () => {
 
                                 <div className="mt-4">
                                     <div className="flex justify-center">
-                                        <button className="px-6 py-3.5 flex items-center bg-gray-800 text-white rounded-lg shadow transition-all hover:bg-gray-600 mr-2">
+                                        <button
+                                            type="submit"
+                                            className="px-6 py-3.5 flex items-center bg-gray-800 text-white rounded-lg shadow transition-all hover:bg-gray-600 mr-2"
+                                        >
                                             <CheckCircleIcon className="h-6 w-6 text-white mr-2" />
                                             Submit
                                         </button>
